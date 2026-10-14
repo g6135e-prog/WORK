@@ -31,6 +31,17 @@ head, body = x.split('<office:body>')
 extra_styles = '''<style:style style:name="PB94" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:break-before="page" fo:widows="2" fo:orphans="2" fo:line-height="0.2916in"/></style:style>
 <style:style style:name="PB96" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:break-before="page" fo:widows="2" fo:orphans="2" fo:line-height="0.2916in"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-weight="bold" style:font-weight-asian="bold" style:font-weight-complex="bold" fo:font-size="13.5pt" style:font-size-asian="13.5pt" style:font-size-complex="13.5pt"/></style:style>
 <style:style style:name="PCap" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:text-align="center" fo:margin-bottom="0.12in" fo:keep-with-next="never"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-size="11pt" style:font-size-asian="11pt"/></style:style>
+<style:style style:name="frBase" style:family="graphic"><style:graphic-properties style:wrap="none" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0.04in" fo:margin-left="0in" fo:margin-right="0in" style:run-through="background" fo:border="none"/></style:style>
+<style:style style:name="frOvl" style:family="graphic"><style:graphic-properties style:wrap="run-through" style:run-through="foreground" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0in" fo:margin-left="0in" fo:margin-right="0in" fo:border="none"/></style:style>
+<style:style style:name="frTxt" style:family="graphic"><style:graphic-properties style:wrap="run-through" style:run-through="foreground" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0in" fo:margin-left="0in" fo:margin-right="0in" fo:background-color="#ffffff" draw:fill="solid" draw:fill-color="#ffffff" fo:padding="0.03in" fo:border="0.01in solid #000000"/></style:style>
+<style:style style:name="PLeg" style:family="paragraph"><style:paragraph-properties fo:margin-top="0in" fo:margin-bottom="0in" fo:line-height="115%"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-size="7.5pt" style:font-size-asian="7.5pt" style:font-size-complex="7.5pt"/></style:style>
+<style:style style:name="PFig" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:text-align="start" fo:keep-with-next="always" fo:margin-top="0.05in"/></style:style>
+<style:style style:name="TC0" style:family="text"><style:text-properties fo:color="#dc1e1e"/></style:style>
+<style:style style:name="TC1" style:family="text"><style:text-properties fo:color="#145ae6"/></style:style>
+<style:style style:name="TC2" style:family="text"><style:text-properties fo:color="#00963c"/></style:style>
+<style:style style:name="TC3" style:family="text"><style:text-properties fo:color="#c800c8"/></style:style>
+<style:style style:name="TC4" style:family="text"><style:text-properties fo:color="#e67800"/></style:style>
+<style:style style:name="TC5" style:family="text"><style:text-properties fo:color="#00a0aa"/></style:style>
 <style:style style:name="PImg" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:text-align="center" fo:keep-with-next="always"/></style:style>
 <style:style style:name="PNote" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:widows="2" fo:orphans="2" fo:margin-left="0.25in" fo:margin-top="0.04in" fo:margin-bottom="0.04in" fo:line-height="130%"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-size="11pt" style:font-size-asian="11pt"/></style:style>
 <style:style style:name="PBody" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:widows="2" fo:orphans="2" fo:margin-left="0.5in" fo:margin-top="0.04in" fo:margin-bottom="0.04in" fo:line-height="140%" fo:text-align="justify"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-size="12pt" style:font-size-asian="12pt"/></style:style>
@@ -87,17 +98,40 @@ line0 = tpl_blk.index('<text:p text:style-name="P140">'); line1 = tpl_blk.index(
 hline_tpl = tpl_blk[line0:line1]
 
 media = []
+LAY = {}
 def fig_xml(i, grp, k, cap):
-    src = f'{SCR}/fig/I{i}_{grp}.jpg'; name = f'media/I{i}_{grp}.jpg'
-    im = Image.open(src); w, h = im.size
-    if w > 1600: im = im.resize((1600, int(h*1600/w)), Image.LANCZOS)
-    os.makedirs(SCR + '/odt/media', exist_ok=True); im.save(SCR + '/odt/' + name, quality=85)
-    media.append(name)
-    W = 6.1; H = W*im.size[1]/im.size[0]
-    if H > 6.3: H = 6.3; W = H*im.size[0]/im.size[1]
-    return (f'<text:p text:style-name="PImg"><draw:frame draw:style-name="a2" draw:name="圖{i}-{k}" text:anchor-type="as-char" svg:width="{W:.3f}in" svg:height="{H:.3f}in" draw:z-index="{10+i*5+k}">'
-            f'<draw:image xlink:href="{name}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame></text:p>'
-            f'<text:p text:style-name="PCap">{esc(cap)}</text:p>')
+    if i not in LAY: LAY[i] = json.load(open(f'{SCR}/layers_out/I{i}.json', encoding='utf-8'))
+    L = LAY[i][grp]
+    os.makedirs(SCR + '/odt/media', exist_ok=True)
+    bp, BW, BH = L['base']
+    bname = f'media/I{i}_{grp}_base.jpg'
+    Image.open(bp).convert('RGB').save(SCR + '/odt/' + bname, quality=88)
+    media.append((bname, 'image/jpeg'))
+    Win = 6.1; sc = Win / BW; Hin = BH * sc
+    if Hin > 6.4: Hin = 6.4; sc = Hin / BH; Win = BW * sc
+    z = 100 + i*40 + k*10
+    x = (f'<text:p text:style-name="PFig"><draw:frame draw:style-name="frBase" draw:name="圖{i}-{k} 底圖(設計圖)" text:anchor-type="paragraph" '
+         f'svg:x="0in" svg:y="0in" svg:width="{Win:.4f}in" svg:height="{Hin:.4f}in" draw:z-index="{z}">'
+         f'<draw:image xlink:href="{bname}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>')
+    for m, (mp, mx, my, mw, mh, c) in enumerate(L['moves']):
+        mname = f'media/I{i}_{grp}_mv{m+1}.png'
+        shutil.copy(mp, SCR + '/odt/' + mname); media.append((mname, 'image/png'))
+        x += (f'<draw:frame draw:style-name="frOvl" draw:name="圖{i}-{k} 軌跡{m+1}" text:anchor-type="paragraph" '
+              f'svg:x="{mx*sc:.4f}in" svg:y="{my*sc:.4f}in" svg:width="{mw*sc:.4f}in" svg:height="{mh*sc:.4f}in" draw:z-index="{z+1+m}">'
+              f'<draw:image xlink:href="{mname}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>')
+    # legend text box (top-left) and vehicle spec (bottom-right), editable
+    rows = ''.join(f'<text:p text:style-name="PLeg"><text:span text:style-name="TC{m}">■</text:span> {esc(t)}</text:p>' for m, (t, c) in enumerate(L['rows']))
+    lw = 3.3 if grp != 'thru' else 3.9
+    x += (f'<draw:frame draw:style-name="frTxt" draw:name="圖{i}-{k} 圖例" text:anchor-type="paragraph" svg:x="0.05in" svg:y="0.05in" svg:width="{lw}in" draw:z-index="{z+8}">'
+          f'<draw:text-box fo:min-height="0.2in">{rows}</draw:text-box></draw:frame>')
+    spec = ['設計車種：消防車(水箱車)', f'全長{VEH["L"]:.2f}m　車寬{VEH["W"]:.2f}m', f'軸距{VEH["WB"]:.2f}m　輪距{VEH["TRACK"]:.2f}m',
+            f'前懸{VEH["FOH"]:.2f}m　後懸{VEH["ROH"]:.2f}m', f'最大轉向角{VEH["STEER"]:.0f}°', '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
+    sw, sh = 1.75, 0.11*len(spec)+0.08
+    x += (f'<draw:frame draw:style-name="frTxt" draw:name="圖{i}-{k} 車種規格" text:anchor-type="paragraph" svg:x="{Win-sw-0.05:.4f}in" svg:y="{Hin-sh-0.05:.4f}in" svg:width="{sw}in" draw:z-index="{z+9}">'
+          f'<draw:text-box fo:min-height="{sh:.3f}in">' + ''.join(f'<text:p text:style-name="PLeg">{esc(t)}</text:p>' for t in spec) + '</draw:text-box></draw:frame>')
+    x += '</text:p>'
+    x += f'<text:p text:style-name="PCap">{esc(cap)}</text:p>'
+    return x
 
 summary = []
 blocks = ''
@@ -176,10 +210,10 @@ os.makedirs(od + '/META-INF', exist_ok=True)
 open(od + '/content.xml', 'w', encoding='utf-8').write(x2)
 man = open(TPL + '/META-INF/manifest.xml', encoding='utf-8').read()
 man = man.replace('<manifest:file-entry manifest:full-path="media/image1.png" manifest:media-type="image/png"/>',
-                  ''.join(f'<manifest:file-entry manifest:full-path="{m}" manifest:media-type="image/jpeg"/>' for m in media))
+                  ''.join(f'<manifest:file-entry manifest:full-path="{m}" manifest:media-type="{t}"/>' for m, t in media))
 open(od + '/META-INF/manifest.xml', 'w', encoding='utf-8').write(man)
 with zipfile.ZipFile(OUT, 'w') as z:
     z.write(od + '/mimetype', 'mimetype', compress_type=zipfile.ZIP_STORED)
-    for f in ['content.xml', 'styles.xml', 'meta.xml', 'settings.xml', 'META-INF/manifest.xml'] + media:
+    for f in ['content.xml', 'styles.xml', 'meta.xml', 'settings.xml', 'META-INF/manifest.xml'] + [m for m, t in media]:
         z.write(od + '/' + f, f, compress_type=zipfile.ZIP_DEFLATED)
 print('wrote', OUT, len(media), 'images')

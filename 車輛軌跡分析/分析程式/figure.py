@@ -75,3 +75,47 @@ def draw(pno, box, results, title, out, page_png, extra_seed=(), mask=None):
         g.rectangle((sx+i*L/5, sy, sx+(i+1)*L/5, sy+12), fill='black' if i % 2 == 0 else 'white', outline='black')
     g.text((sx, sy-34), '0', fill='black', font=fnt(22)); g.text((sx+L-20, sy-34), '10m', fill='black', font=fnt(22))
     base.convert('RGB').save(out, quality=92)
+
+def draw_layers(pno, box, results, out_prefix, page_png, mask=None):
+    """Write separated layers: base (design + scale bar) and one transparent PNG per movement.
+    Returns dict(base=(path,w,h), moves=[(path,x,y,w,h,color)], rows=[...])."""
+    fnt = lambda s: ImageFont.truetype(FONT, s)
+    base = Image.open(page_png).convert('RGB').crop(box)
+    if mask:
+        ImageDraw.Draw(base).rectangle((mask[0]-box[0], mask[1]-box[1], mask[2]-box[0], mask[3]-box[1]), fill='white')
+    base = Image.blend(base, Image.new('RGB', base.size, 'white'), 0.35)
+    g = ImageDraw.Draw(base); W, H = base.size
+    sx, sy = 20, H-40; L = 10*K
+    g.rectangle((sx, sy-40, sx+L+90, sy+28), fill='white')
+    for i in range(5):
+        g.rectangle((sx+i*L/5, sy, sx+(i+1)*L/5, sy+12), fill='black' if i % 2 == 0 else 'white', outline='black')
+    g.text((sx, sy-34), '0', fill='black', font=fnt(22)); g.text((sx+L-20, sy-34), '10m', fill='black', font=fnt(22))
+    bp = f'{out_prefix}_base.png'; base.save(bp, optimize=True)
+    out = dict(base=(bp, W, H), moves=[], rows=[])
+    for k, r in enumerate(results):
+        c = COL[k % len(COL)]
+        ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
+        geoms = r['env'].geoms if hasattr(r['env'], 'geoms') else [r['env']]
+        for e in geoms:
+            xy = to_px(e.exterior.coords, box)
+            d.polygon(xy, fill=c+(60,)); d.line(xy, fill=c+(255,), width=3)
+        w = wheels(r['sim'])
+        for nm in ('FL', 'FR', 'RL', 'RR'):
+            d.line(to_px(w[nm], box), fill=c+(210,), width=1)
+        d.line(to_px(r['sim']['F'], box), fill=(40, 40, 40, 220), width=1)
+        for i in (int(len(r['sim']['F'])*0.08), len(r['sim']['F'])-1):
+            bpoly = body_poly(r['sim'], i)
+            d.line(to_px(list(bpoly.exterior.coords), box), fill=(0, 0, 0, 255), width=3)
+        F = r['sim']['F']; a = F[-1]; bb = F[-40]; dv = (a-bb)/np.linalg.norm(a-bb); n = np.array([-dv[1], dv[0]])
+        d.polygon(to_px([a+dv*1.6, a+n*0.9, a-n*0.9], box), fill=c+(255,))
+        x, y = r['loc'] if r.get('turn', True) else to_px([F[len(F)//2]], box)[0]
+        d.ellipse((x-16, y-16, x+16, y+16), fill=(255, 255, 255, 255), outline=c+(255,), width=4)
+        d.text((x-11, y-14), str(k+1), fill=c+(255,), font=fnt(26))
+        bbx = ov.getbbox()
+        x0, y0 = max(0, bbx[0]-4), max(0, bbx[1]-4); x1, y1 = min(W, bbx[2]+4), min(H, bbx[3]+4)
+        mp = f'{out_prefix}_mv{k+1}.png'; ov.crop((x0, y0, x1, y1)).save(mp, optimize=True)
+        out['moves'].append((mp, x0, y0, x1-x0, y1-y0, c))
+        t = f"{k+1}. {r['tag']}"
+        t += f"　最小淨距 {r['clr']:.2f} m" if r.get('turn', True) else f"　{r.get('note','')}"
+        out['rows'].append((t, c))
+    return out

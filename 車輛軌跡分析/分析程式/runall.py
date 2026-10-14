@@ -1,4 +1,4 @@
-import sys, json, math; sys.path.insert(0, __file__.rsplit('/',1)[0])
+import sys, json, math, os; sys.path.insert(0, __file__.rsplit('/',1)[0])
 from search import *
 E,W,N,Sd=(1,0),(-1,0),(0,-1),(0,1)
 RR=np.arange(8,31,1.0); RL=np.arange(10,36,1.0)
@@ -109,6 +109,12 @@ def run_one(i):
             off,L,req=thru_note(pts); r.update(off=off,L=L,req=req)
             r['note']=f'偏移 {off:.2f} m／漸變長 {L:.1f} m'
             out['thru'].append(r); print(i,'thru',tag,'off=%.2f L=%.1f req=%.1f'%(off,L,req))
+    import pickle
+    lay={}
+    os.makedirs(SCR+'/layers_out',exist_ok=True)
+    for grp in out:
+        lay[grp]=draw_layers(c['pno'],box,out[grp],SCR+f'/layers_out/I{i}_{grp}',SCR+'/'+c['png'],mask=c.get('mask'))
+    json.dump(lay,open(SCR+f'/layers_out/I{i}.json','w'),ensure_ascii=False)
     for grp in out:
         draw(c['pno'],box,out[grp],f"路口{i} {c['name']}　消防車{GRPN[grp]}軌跡",SCR+f'/fig/I{i}_{grp}.jpg',SCR+'/'+c['png'],mask=c.get('mask'))
     res={g:[{k:(float(v) if isinstance(v,(np.floating,float)) else v) for k,v in r.items() if k in('tag','clr','steer','R','entry','exit','off','L','req')} for r in out[g]] for g in out}
