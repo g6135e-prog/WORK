@@ -1,6 +1,27 @@
 import sys; sys.path.insert(0, __file__.rsplit('/',1)[0])
 from analyze import *
 
+
+def dashed(g, pts, fill, width=2, on=10, off=7):
+    pts = [np.array(p, float) for p in pts]
+    carry = 0.0; draw_on = True
+    for a, b in zip(pts, pts[1:]):
+        L = np.linalg.norm(b-a)
+        if L == 0: continue
+        u = (b-a)/L; t = 0.0
+        while t < L:
+            seg = (on if draw_on else off) - carry
+            t2 = min(L, t+seg)
+            if draw_on: g.line([tuple(a+u*t), tuple(a+u*t2)], fill=fill, width=width)
+            if t2 - t < seg: carry += t2-t; break
+            carry = 0.0; draw_on = not draw_on; t = t2
+
+def clearance_line(g, env, box, c):
+    buf = env.buffer(0.25, join_style=1)
+    gs = buf.geoms if hasattr(buf, 'geoms') else [buf]
+    for e in gs:
+        dashed(g, to_px(e.exterior.coords, box), c+(255,), width=2)
+
 COL = [(220,30,30),(20,90,230),(0,150,60),(200,0,200),(230,120,0),(0,160,170)]
 
 def seeds_from(moves, box):
@@ -26,6 +47,7 @@ def draw(pno, box, results, title, out, page_png, extra_seed=(), mask=None):
             xy = to_px(e.exterior.coords, box)
             g.polygon(xy, fill=c+(55,), outline=c+(255,))
             g.line(xy, fill=c+(255,), width=3)
+        if r.get('turn', True): clearance_line(g, r['env'], box, c)
         w = wheels(r['sim'])
         for nm in ('FL', 'FR', 'RL', 'RR'):
             g.line(to_px(w[nm], box), fill=c+(200,), width=1)
@@ -63,7 +85,7 @@ def draw(pno, box, results, title, out, page_png, extra_seed=(), mask=None):
     W, H = base.size
     spec = [f"設計車種：{VEH['name']}", f"全長 {VEH['L']:.2f}m　車寬 {VEH['W']:.2f}m",
             f"軸距 {VEH['WB']:.2f}m　輪距 {VEH['TRACK']:.2f}m", f"前懸 {VEH['FOH']:.2f}m　後懸 {VEH['ROH']:.2f}m",
-            f"最小轉向半徑 {VEH['RMIN']:.2f}m", '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
+            f"最小轉向半徑 {VEH['RMIN']:.2f}m", '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處', '虛線：25cm淨距線']
     bw = 400; bh = 34*len(spec)+20
     g.rectangle((W-bw-12, H-bh-12, W-12, H-12), fill='white', outline='black', width=3)
     for i, t in enumerate(spec):
@@ -99,6 +121,7 @@ def draw_layers(pno, box, results, out_prefix, page_png, mask=None):
         for e in geoms:
             xy = to_px(e.exterior.coords, box)
             d.polygon(xy, fill=c+(60,)); d.line(xy, fill=c+(255,), width=3)
+        if r.get('turn', True): clearance_line(d, r['env'], box, c)
         w = wheels(r['sim'])
         for nm in ('FL', 'FR', 'RL', 'RR'):
             d.line(to_px(w[nm], box), fill=c+(210,), width=1)

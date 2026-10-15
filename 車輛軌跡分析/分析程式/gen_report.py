@@ -80,7 +80,7 @@ desc = [
     f'1. 設計車種：{VEH["name"]}（依設計規範圖1.3「大客車最小轉向軌跡參考圖」），全長{VEH["L"]:.2f} m、車寬{VEH["W"]:.2f} m、軸距{VEH["WB"]:.2f} m、前懸{VEH["FOH"]:.2f} m、後懸{VEH["ROH"]:.2f} m、左前輪最小轉向半徑{VEH["RMIN"]:.2f} m（換算最大轉向角約{VEH["STEER"]:.1f}°）；輪距圖未標示，採{VEH["TRACK"]:.2f} m。',
     '2. 分析方法：以前軸中心沿導引路徑行駛、後軸依曳引曲線（tractrix）追隨之車輛運動模型，逐點計算車身四角及四輪軌跡，取其包絡範圍為車身掃掠範圍。比例尺依設計圖里程樁號（每20 m）校正。',
     '3. 結構物判定：緣石、轉角綠帶、島頭及中央分隔島等取自設計圖CAD圖層（01-7、中央分隔島等），標線（車道線、停止線、斑馬線、箭頭）不列為結構物；圖層未繪製之既有緣石及中央分隔島依圖面補繪。',
-    '4. 轉向路徑：於同向車道範圍內，以轉彎半徑8~35 m（且轉向角不超過最大轉向角、轉彎圓弧須於路口範圍內完成）搜尋前軸導引路徑，取與結構物淨距最大、且最少跨用車道之路徑。',
+    '4. 轉向路徑：依道路交通安全規則第102條，右轉由外側（右轉）車道轉入目的道路最外側車道（外側轉外側），左轉由內側（左轉）車道轉入目的道路最內側車道（內側轉內側）。車輛於路口範圍外須於車道內行駛（僅允許車道內±0.25 m偏移），路口範圍內可向外側擺頭；於可行路徑中取最小淨距最接近且不小於25公分者繪製（即以25公分淨距為設計條件）。如無可行路徑，則改駛入目的道路相鄰同向車道並加註「＊」。',
     f'5. 檢核標準：（1）轉向軌跡與結構物間距應保持25公分以上；（2）直行車道於路口上下游偏移時，路口內可用漸變長度應不小於 L＝W×V²/155（W：偏移量m，V：速率km/h，V≦60 km/h），本報告採 V＝{V_DESIGN:.0f} km/h 檢核。',
 ]
 dp = ''.join(f'<text:p text:style-name="PBody">{esc(t)}</text:p>' for t in desc)
@@ -125,7 +125,7 @@ def fig_xml(i, grp, k, cap):
     x += (f'<draw:frame draw:style-name="frTxt" draw:name="圖{i}-{k} 圖例" text:anchor-type="paragraph" svg:x="0.05in" svg:y="0.05in" svg:width="{lw}in" draw:z-index="{z+8}">'
           f'<draw:text-box fo:min-height="0.2in">{rows}</draw:text-box></draw:frame>')
     spec = [f'設計車種：{VEH["name"]}', f'全長{VEH["L"]:.2f}m　車寬{VEH["W"]:.2f}m', f'軸距{VEH["WB"]:.2f}m　輪距{VEH["TRACK"]:.2f}m',
-            f'前懸{VEH["FOH"]:.2f}m　後懸{VEH["ROH"]:.2f}m', f'最小轉向半徑{VEH["RMIN"]:.2f}m', '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
+            f'前懸{VEH["FOH"]:.2f}m　後懸{VEH["ROH"]:.2f}m', f'最小轉向半徑{VEH["RMIN"]:.2f}m', '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處', '虛線：25cm淨距線']
     sw, sh = 1.75, 0.11*len(spec)+0.08
     x += (f'<draw:frame draw:style-name="frTxt" draw:name="圖{i}-{k} 車種規格" text:anchor-type="paragraph" svg:x="{Win-sw-0.05:.4f}in" svg:y="{Hin-sh-0.05:.4f}in" svg:width="{sw}in" draw:z-index="{z+9}">'
           f'<draw:text-box fo:min-height="{sh:.3f}in">' + ''.join(f'<text:p text:style-name="PLeg">{esc(t)}</text:p>' for t in spec) + '</draw:text-box></draw:frame>')
@@ -143,7 +143,7 @@ for i, c in CFG.items():
         rs = R[grp]; ok = all(r['clr'] >= 0.25 for r in rs)
         items = []
         for r in rs:
-            strad = (r['entry'] > 0 or r['exit'] > 0) if grp == 'right' else (r['entry'] >= 2 or r['exit'] > 0)
+            strad = bool(r.get('borrow'))
             items.append(f'{r["tag"]}{"＊" if strad else ""}：最小淨距{r["clr"]:.2f} m')
         txt = ('結構物是否與轉向軌跡保持25公分以上之間距<text:line-break/>分析結果：' + esc('；'.join(items)) +
                ('，均保持25公分以上。' if ok else '，未達25公分。'))
@@ -171,7 +171,7 @@ for i, c in CFG.items():
     blk = f'<text:h text:style-name="{hstyle}" text:outline-level="3">({CN[i-1]})路口{i}({esc(c["name"])})</text:h>'
     blk += f'<text:p text:style-name="PNote">位置：{esc(STA[i])}；套繪圖說：{esc(c["sheet"])}。{esc(NOTE[i])}</text:p>'
     blk += '<text:h text:style-name="P97" text:outline-level="3">1.分析項目</text:h>' + t
-    blk += '<text:p text:style-name="PNote">註：標示「＊」者表示'+VEH['name']+'轉向時須跨用相鄰同向車道（含跨越車道線行駛）始能維持25公分以上間距。</text:p>'
+    blk += '<text:p text:style-name="PNote">註：標示「＊」者表示'+VEH['name']+'無法以外側轉外側（右轉）／內側轉內側（左轉）維持25公分以上間距，須駛入目的道路相鄰同向車道完成轉向。</text:p>'
     blk += hline_tpl.replace('draw:id="id1"', f'draw:id="idL{i}"').replace('Horizontal Line 2', f'Horizontal Line {i+10}')
     blk += '<text:p text:style-name="P142">2.軌跡模擬圖(轉向及直行軌跡)</text:p>'
     k = 0
@@ -193,7 +193,16 @@ if not bad_turn:
 else:
     lst = '、'.join(f'路口{i}{GRPN[g]}' for i, g, ok, v in bad_turn)
     lines.append(f'1. 轉向軌跡：{lst}之{VNm}掃掠範圍與結構物間距未達25公分（詳各路口分析表及軌跡圖之最小淨距標示），建議檢討該處轉角緣石半徑、轉角綠帶或島頭退縮；其餘路口轉向軌跡均保持25公分以上。')
-lines.append(f'2. 標示「＊」者表示{VNm}轉向時須跨用相鄰同向車道（含跨越車道線行駛），建議停止線位置及轉向車道配置維持現行設計，以利大型車轉向。')
+borrowed = []
+for i in CFG:
+    Rj = json.load(open(f'{SCR}/fig/I{i}.json', encoding='utf-8'))
+    for g in ('right', 'left'):
+        for r in Rj[g]:
+            if r.get('borrow') and r['clr'] >= 0.25: borrowed.append(f'路口{i}{r["tag"]}')
+if borrowed:
+    lines.append(f'2. 依外側轉外側（右轉）、內側轉內側（左轉）原則檢核，{"、".join(borrowed)}之{VNm}無法以外側轉外側完成轉向並維持25公分間距，駛入相鄰同向車道後可維持25公分以上（表內標示「＊」）；建議檢討該轉角緣石半徑或轉角綠帶退縮，或接受大型車轉向時借用相鄰車道。')
+else:
+    lines.append(f'2. 各方向均可依外側轉外側（右轉）、內側轉內側（左轉）原則完成轉向並維持25公分以上間距。')
 thru_bad = []
 for i, c in CFG.items():
     if c['thru'] is None: continue

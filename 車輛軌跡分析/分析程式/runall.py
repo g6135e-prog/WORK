@@ -1,7 +1,7 @@
 import sys, json, math, os; sys.path.insert(0, __file__.rsplit('/',1)[0])
 from search import *
 E,W,N,Sd=(1,0),(-1,0),(0,-1),(0,1)
-RR=np.arange(10,36,1.0); RL=np.arange(11,41,1.0)
+RR=np.arange(11,26,1.0); RL=np.arange(11,31,1.0)
 def ys(x0,d,vals): return [((x0,v),d) for v in vals]
 def xs(y0,d,vals): return [((v,y0),d) for v in vals]
 SK=0.155; NB=(SK/math.hypot(SK,1),-1/math.hypot(SK,1)); SB=(-NB[0],-NB[1])
@@ -100,8 +100,13 @@ def run_one(i):
     for grp in ('right','left'):
         out[grp]=[]
         for tag,en,ex,Rs in c[grp]:
-            r=turn(ctx,en,ex,Rs); r['tag']=tag; out[grp].append(r)
-            print(i,grp,tag,'clr=%.2f steer=%.1f R=%s entry=%d exit=%d'%(r['clr'],r['steer'],r['R'],r['entry'],r['exit']),flush=True)
+            r=turn_rule(ctx,en[0],ex[0],Rs); r['borrow']=False
+            if r is None or r['clr']<0.25:
+                r2=turn_rule(ctx,en[0],ex[-1],Rs)
+                if r2 is not None and (r is None or r2['clr']>=0.25 or r2['clr']>r['clr']):
+                    r2['borrow']=True; r2['strict_clr']=None if r is None else r['clr']; r=r2
+            r['tag']=tag; out[grp].append(r)
+            print(i,grp,tag,'clr=%.2f steer=%.1f R=%s swing=%.1f off=%.2f/%.2f'%(r['clr'],r['steer'],r['R'],r['swing'],r['entry_off'],r['exit_off']),flush=True)
     if c['thru']:
         out['thru']=[]
         for tag,pts in c['thru']:
@@ -117,7 +122,8 @@ def run_one(i):
     json.dump(lay,open(SCR+f'/layers_out/I{i}.json','w'),ensure_ascii=False)
     for grp in out:
         draw(c['pno'],box,out[grp],f"路口{i} {c['name']}　{VEH['name']}{GRPN[grp]}軌跡",SCR+f'/fig/I{i}_{grp}.jpg',SCR+'/'+c['png'],mask=c.get('mask'))
-    res={g:[{k:(float(v) if isinstance(v,(np.floating,float)) else v) for k,v in r.items() if k in('tag','clr','steer','R','entry','exit','off','L','req')} for r in out[g]] for g in out}
+    res={g:[{k:(float(v) if isinstance(v,(np.floating,float)) else v) for k,v in r.items() if k in('tag','clr','steer','R','entry','exit','off','L','req','swing','entry_off','exit_off','borrow','strict_clr')} for r in out[g]] for g in out}
     json.dump(res,open(SCR+f'/fig/I{i}.json','w'),ensure_ascii=False,indent=1)
 if __name__=='__main__':
-    for i in map(int,sys.argv[1:]): run_one(i)
+    from multiprocessing import Pool
+    with Pool(5) as p: p.map(run_one, list(map(int,sys.argv[1:])))

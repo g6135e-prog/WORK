@@ -96,3 +96,55 @@ def turn(ctx, entries, exits, Rs, maxsteer=VEH['STEER'], prefer=0.35):
 def through(ctx, pts, r=(60, 60)):
     res = ctx.eval(pts, list(r)[:len(pts)-2]); res['R'] = None
     return res
+
+def _exit_dist(zone, p, u, step=2.0, maxd=4000):
+    """distance (px) from p along direction u until leaving zone polygon."""
+    d = 0.0
+    while d < maxd and zone.contains(Point(*(p+u*d))): d += step
+    return d
+
+def turn_rule(ctx, entry, exit_, Rs, offs_m=(0.0, -0.25, 0.25), swings_m=np.arange(0, 5.01, 0.5),
+              target=0.25, maxsteer=VEH['STEER']):
+    """Lane-disciplined turn (right: outer->outer, left: inner->inner).  Before/after the
+    intersection zone the vehicle stays in its lane (lateral offset only within the lane);
+    inside the zone it may swing outward by `s`.  Searches swing levels in increasing order and
+    returns, at the first level with any feasible path, the one whose min clearance is closest
+    to (but not below) `target`.  If nothing is feasible, returns the best (max clearance) path."""
+    (sp0, sd), (ep0, ed) = entry, exit_
+    sd = np.array(sd, float); sd /= np.linalg.norm(sd); ed = np.array(ed, float); ed /= np.linalg.norm(ed)
+    ns = np.array([-sd[1], sd[0]]); ne = np.array([-ed[1], ed[0]])
+    best_bad = None
+    geo = []
+    for oi in offs_m:
+        for oe in offs_m:
+            sp = np.array(sp0, float) + ns*oi*K; ep = np.array(ep0, float) + ne*oe*K
+            V = line_isect(sp, sd, ep, ed)
+            dA = _exit_dist(ctx.zone, V, -sd); dB = _exit_dist(ctx.zone, V, ed)
+            geo.append((oi, oe, sp, ep, V, V - sd*dA, V + ed*dB))
+    bis0 = (-sd + ed); bis0 /= np.linalg.norm(bis0)
+    for s in swings_m:
+        feas = []
+        for oi, oe, sp, ep, V, A, B in geo:
+            Vs = V - bis0*s*K
+            for R in Rs:
+                pts = [tuple(sp), tuple(A), tuple(Vs), tuple(B), tuple(ep)]
+                P = [np.array(p) for p in pts]; radii = [60.0, R, 60.0]; tl = []; ok = True
+                for j in range(1, 4):
+                    u1 = P[j]-P[j-1]; u2 = P[j+1]-P[j]
+                    n1, n2 = np.linalg.norm(u1), np.linalg.norm(u2)
+                    if n1 < 1 or n2 < 1: ok = False; break
+                    ang = math.acos(np.clip(np.dot(-u1/n1, u2/n2), -1, 1))
+                    tl.append(radii[j-1]*K/math.tan(ang/2) if ang < math.pi-1e-3 else 0)
+                if not ok: continue
+                segs = [np.linalg.norm(P[j+1]-P[j]) for j in range(4)]
+                if tl[0] > segs[0] or tl[0]+tl[1] > segs[1] or tl[1]+tl[2] > segs[2] or tl[2] > segs[3]: continue
+                try: r = ctx.eval(pts, radii)
+                except Exception: continue
+                if r['steer'] > maxsteer: continue
+                r.update(entry_off=oi, exit_off=oe, swing=float(s), R=float(R), entry=0, exit=0)
+                if r['clr'] >= target: feas.append(r)
+                elif best_bad is None or r['clr'] > best_bad['clr']: best_bad = r
+        if feas:
+            feas.sort(key=lambda r: (r['clr'], abs(r['entry_off'])+abs(r['exit_off'])))
+            return feas[0]
+    return best_bad
