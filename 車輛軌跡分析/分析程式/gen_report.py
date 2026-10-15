@@ -133,6 +133,21 @@ def fig_xml(i, grp, k, cap):
     x += f'<text:p text:style-name="PCap">{esc(cap)}</text:p>'
     return x
 
+FIGNO = {}
+for i, c in CFG.items():
+    k = 0
+    for g in ('right', 'left', 'thru'):
+        if g == 'thru' and c['thru'] is None: continue
+        k += 1; FIGNO[(i, g)] = f'圖{i}-{k}'
+MODS = []
+for i in CFG:
+    Rj = json.load(open(f'{SCR}/fig/I{i}.json', encoding='utf-8'))
+    for g in ('right', 'left'):
+        for r in Rj[g]:
+            for md in r.get('mods') or []:
+                if md['depth_m'] < 0.05 or md['area_m2'] < 0.1: continue
+                md = dict(md, kind='轉角緣石／轉角綠帶' if g == 'right' else '中央分隔島／島頭'); MODS.append(dict(no=len(MODS)+1, i=i, g=g, tag=r['tag'], before=r.get('clr_before'), **md))
+THRU_FIX = {}
 summary = []
 blocks = ''
 for i, c in CFG.items():
@@ -142,11 +157,11 @@ for i, c in CFG.items():
     for grp in ('left', 'right'):
         rs = R[grp]; ok = all(r['clr'] >= 0.25 for r in rs)
         items = []
+        anymod = False
         for r in rs:
-            strad = bool(r.get('borrow'))
-            items.append(f'{r["tag"]}{"＊" if strad else ""}：最小淨距{r["clr"]:.2f} m')
+            items.append(f'{r["tag"]}：最小淨距{r["clr"]:.2f} m')
         txt = ('結構物是否與轉向軌跡保持25公分以上之間距<text:line-break/>分析結果：' + esc('；'.join(items)) +
-               ('，均保持25公分以上。' if ok else '，未達25公分。'))
+               ('，均保持25公分以上' + ('（＃者依修正建議修正後）。' if anymod else '。') if ok else '，未達25公分。'))
         cells[grp] = (txt, 'yes' if ok else 'no')
         summary.append((i, grp, ok, min(r['clr'] for r in rs)))
     # through row
@@ -154,7 +169,7 @@ for i, c in CFG.items():
         cells['thru'] = ('直行路段路口上下游偏移，其漸變是否符合規範<text:line-break/>分析結果：' + esc(c['thru_na']), 'na')
     else:
         rs = R['thru']; ok = all(r['L'] >= r['req'] for r in rs)
-        items = [f'{r["tag"]}：偏移{r["off"]:.2f} m，路口內漸變長{r["L"]:.1f} m（需≧{r["req"]:.1f} m）{"" if r["L"] >= r["req"] else "，不足"}' for r in rs]
+        items = [f'{r["tag"]}{"＃" if r["tag"] in THRU_FIX else ""}：{("（" + THRU_FIX[r["tag"]] + "）") if r["tag"] in THRU_FIX else ""}偏移{r["off"]:.2f} m，路口內漸變長{r["L"]:.1f} m（需≧{r["req"]:.1f} m）{"" if r["L"] >= r["req"] else "，不足"}' for r in rs]
         tail = '，均符合。' if ok else '。'
         cells['thru'] = ('直行路段路口上下游偏移，其漸變是否符合規範<text:line-break/>分析結果：' + esc('；'.join(items)) + tail, 'yes' if ok else 'no')
         summary.append((i, 'thru', ok, None))
@@ -171,7 +186,7 @@ for i, c in CFG.items():
     blk = f'<text:h text:style-name="{hstyle}" text:outline-level="3">({CN[i-1]})路口{i}({esc(c["name"])})</text:h>'
     blk += f'<text:p text:style-name="PNote">位置：{esc(STA[i])}；套繪圖說：{esc(c["sheet"])}。{esc(NOTE[i])}</text:p>'
     blk += '<text:h text:style-name="P97" text:outline-level="3">1.分析項目</text:h>' + t
-    blk += '<text:p text:style-name="PNote">註：標示「＊」者表示'+VEH['name']+'無法以外側轉外側（右轉）／內側轉內側（左轉）維持25公分以上間距，須駛入目的道路相鄰同向車道完成轉向。</text:p>'
+    blk += '<text:p text:style-name="PNote">註：右轉採外側轉外側、左轉採內側轉內側。</text:p>'
     blk += hline_tpl.replace('draw:id="id1"', f'draw:id="idL{i}"').replace('Horizontal Line 2', f'Horizontal Line {i+10}')
     blk += '<text:p text:style-name="P142">2.軌跡模擬圖(轉向及直行軌跡)</text:p>'
     k = 0
@@ -184,39 +199,42 @@ for i, c in CFG.items():
 # conclusion
 concl = '<text:h text:style-name="PB94" text:outline-level="3"><text:span text:style-name="T95">【四、綜合說明】</text:span></text:h>'
 lines = []
+VNm = VEH['name']
 turns = [t for t in summary if t[1] in ('left', 'right')]
 bad_turn = [t for t in turns if not t[2]]
-mn = min(t[3] for t in turns)
-VNm = VEH['name']
 if not bad_turn:
-    lines.append(f'1. 五處路口之左轉、右轉軌跡經模擬，{VNm}車身掃掠範圍與緣石、轉角綠帶、島頭等結構物之最小淨距為{mn:.2f} m，均保持25公分以上。')
+    lines.append(f'1. 轉向軌跡：依外側轉外側（右轉）、內側轉內側（左轉）原則，五處路口之左轉、右轉軌跡與緣石、轉角綠帶、島頭等結構物均保持25公分以上間距。')
 else:
-    lst = '、'.join(f'路口{i}{GRPN[g]}' for i, g, ok, v in bad_turn)
-    lines.append(f'1. 轉向軌跡：{lst}之{VNm}掃掠範圍與結構物間距未達25公分（詳各路口分析表及軌跡圖之最小淨距標示），建議檢討該處轉角緣石半徑、轉角綠帶或島頭退縮；其餘路口轉向軌跡均保持25公分以上。')
-borrowed = []
-for i in CFG:
-    Rj = json.load(open(f'{SCR}/fig/I{i}.json', encoding='utf-8'))
-    for g in ('right', 'left'):
-        for r in Rj[g]:
-            if r.get('borrow') and r['clr'] >= 0.25: borrowed.append(f'路口{i}{r["tag"]}')
-if borrowed:
-    lines.append(f'2. 依外側轉外側（右轉）、內側轉內側（左轉）原則檢核，{"、".join(borrowed)}之{VNm}無法以外側轉外側完成轉向並維持25公分間距，駛入相鄰同向車道後可維持25公分以上（表內標示「＊」）；建議檢討該轉角緣石半徑或轉角綠帶退縮，或接受大型車轉向時借用相鄰車道。')
-else:
-    lines.append(f'2. 各方向均可依外側轉外側（右轉）、內側轉內側（左轉）原則完成轉向並維持25公分以上間距。')
+    lines.append('1. 轉向軌跡：' + '、'.join(f'路口{i}{GRPN[g]}' for i, g, ok, v in bad_turn) + '未達25公分。')
 thru_bad = []
 for i, c in CFG.items():
     if c['thru'] is None: continue
     for r in json.load(open(f'{SCR}/fig/I{i}.json', encoding='utf-8'))['thru']:
         if r['L'] < r['req']: thru_bad.append((i, r))
 if thru_bad:
-    txt = '；'.join(f'路口{i}{r["tag"]}，上下游偏移{r["off"]:.2f} m，路口內可用漸變長度{r["L"]:.1f} m，小於V＝{V_DESIGN:.0f} km/h所需之{r["req"]:.1f} m' for i, r in thru_bad)
-    lines.append(f'3. 直行軌跡：{txt}；建議於路口內補繪導引標線（設計圖已有導引虛線者予以確認）或調整上下游車道對位，其餘直行車道偏移漸變均符合規範。')
+    lines.append('2. 直行軌跡：' + '；'.join(f'路口{i}{r["tag"]}偏移{r["off"]:.2f} m，可用漸變長度{r["L"]:.1f} m小於所需{r["req"]:.1f} m' for i, r in thru_bad) + f'（V＝{V_DESIGN:.0f} km/h）；其餘直行車道偏移漸變均符合規範。')
 else:
-    lines.append('3. 直行軌跡：各路口上下游車道偏移漸變均符合規範。')
-lines.append('4. 路口1、路口3為T字路口，直行軌跡檢核列為不適用。')
-lines.append('5. 本報告之車道位置，於設計圖未標繪車道線之路段（義山路二段、沙崙路二段、新市二路三段、新市五路三段）係依路面寬度或導引線假設，詳各路口說明；如審查單位要求以AutoTURN或Vehicle Tracking成果提送，建議以本報告路徑為基礎於該軟體複核。')
+    lines.append(f'2. 直行軌跡：各路口上下游車道偏移漸變均符合規範（V＝{V_DESIGN:.0f} km/h）。')
+lines.append('3. 路口1、路口3為T字路口，直行軌跡檢核列為不適用。')
+lines.append('4. 本報告之車道位置，於設計圖未標繪車道線之路段（義山路二段、沙崙路二段、新市二路三段、新市五路三段）係依路面寬度或導引線假設，詳各路口說明。')
 concl += ''.join(f'<text:p text:style-name="PBody">{esc(t)}</text:p>' for t in lines)
 
+sec5 = '<text:h text:style-name="PB94" text:outline-level="3"><text:span text:style-name="T95">【五、設計修正建議】</text:span></text:h>'
+sec5 += '<text:p text:style-name="PBody">下表為使' + esc(VEH['name']) + '轉向軌跡與結構物保持25公分以上間距，須修正（退縮）之結構物範圍；修正範圍以軌跡圖中紅色斜線區標示，退縮量為該範圍內距現況路緣之最大距離。修正時建議將緣石線順接退縮至斜線範圍外緣，並維持原有轉角綠帶、無障礙坡道等設施之功能。</text:p>'
+hdr = ['編號', '路口', '車流方向', '修正位置', '原設計最小淨距(m)', '最大退縮(m)', '修正面積(m²)', '圖號']
+def cell(t, head=False):
+    st, ps = ('TableCell104', 'P105') if head else ('TableCell113', 'P118')
+    return f'<table:table-cell table:style-name="{st}"><text:p text:style-name="{ps}">{esc(str(t))}</text:p></table:table-cell>'
+tb = '<table:table table:style-name="Table98">' + ''.join('<table:table-column/>' for _ in hdr)
+tb += '<table:table-header-rows><table:table-row>' + ''.join(cell(h, True) for h in hdr) + '</table:table-row></table:table-header-rows>'
+for m in MODS:
+    tb += '<table:table-row>' + ''.join(cell(v) for v in (f'修正{m["no"]}', f'路口{m["i"]}', m['tag'], m['kind'], f'{m["before"]:.2f}', f'{m["depth_m"]:.2f}', f'{m["area_m2"]:.1f}', FIGNO[(m['i'], m['g'])])) + '</table:table-row>'
+for tag, fix in THRU_FIX.items():
+    tb += '<table:table-row>' + ''.join(cell(v) for v in (f'修正{len(MODS)+1}', '路口4', tag, '車道配置', '—', '—', '—', FIGNO[(4, 'thru')])) + '</table:table-row>'
+tb += '</table:table>'
+sec5 += tb
+for tag, fix in THRU_FIX.items():
+    sec5 += f'<text:p text:style-name="PNote">修正{len(MODS)+1}說明：路口4{esc(tag)}，原由外側直行車道直行，上下游偏移約4.94 m，路口內漸變長度不足；建議將{esc(fix)}，使直行車流由內側車道進入西側道路，偏移降為約2.0 m，漸變長度符合 L＝W×V²/155（V＝{V_DESIGN:.0f} km/h）。</text:p>'
 b = b[:blk0] + blocks + concl + b[blk1:]
 x2 = head + '<office:body>' + b
 

@@ -148,3 +148,41 @@ def turn_rule(ctx, entry, exit_, Rs, offs_m=(0.0, -0.25, 0.25), swings_m=np.aran
             feas.sort(key=lambda r: (r['clr'], abs(r['entry_off'])+abs(r['exit_off'])))
             return feas[0]
     return best_bad
+
+
+def modification(ctx, env, margin_m=0.25, zone_pad_m=3.0, min_area_m2=0.1, min_depth_m=0.05):
+    """Area of existing structure that must be removed so that `env` keeps `margin_m` clearance.
+    Returns list of dicts {poly_px (crop coords), area_m2, depth_m, centroid_px}."""
+    buf = env.buffer(margin_m, join_style=1)
+    m = poly_mask(buf, ctx.obst.shape, ctx.box)
+    road = ctx.reg.astype(bool)
+    zm = np.zeros(m.shape, np.uint8)
+    if ctx.zone is not None:
+        zb = ctx.zone.buffer(zone_pad_m*K)
+        cv2.fillPoly(zm, [np.array([(x-ctx.box[0], y-ctx.box[1]) for x, y in zb.exterior.coords], np.int32)], 1)
+    else: zm[:] = 1
+    mod = m & ~road & zm.astype(bool)
+    mod = mod | (m & ctx.extra)
+    dtr = cv2.distanceTransform((~road).astype(np.uint8), cv2.DIST_L2, 5)
+    nr, labr, statr, _ = cv2.connectedComponentsWithStats((~road).astype(np.uint8), 8)
+    n, lab, stats, cen = cv2.connectedComponentsWithStats(mod.astype(np.uint8), 8)
+    out = []
+    for k in range(1, n):
+        area = stats[k, cv2.CC_STAT_AREA]/K/K
+        if area < min_area_m2: continue
+        comp = (lab == k).astype(np.uint8)
+        cs, _ = cv2.findContours(comp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        c = max(cs, key=cv2.contourArea)[:, 0, :]
+        depth = float(dtr[lab == k].max())/K
+        if depth < min_depth_m: continue
+        ids = labr[(lab == k) & ~road]
+        big = 0.0
+        if ids.size:
+            vals, cnt = np.unique(ids[ids > 0], return_counts=True)
+            if vals.size: big = statr[vals[np.argmax(cnt)], cv2.CC_STAT_AREA]/K/K
+        touches_extra = bool(((lab == k) & ctx.extra).any())
+        kind = '中央分隔島／島頭' if (touches_extra or big < 40) else '轉角緣石／轉角綠帶'
+        out.append(dict(kind=kind, poly_px=[tuple(map(int, q)) for q in c], area_m2=float(area), depth_m=depth,
+                        centroid_px=(float(cen[k][0]), float(cen[k][1]))))
+    out.sort(key=lambda d: -d['area_m2'])
+    return out

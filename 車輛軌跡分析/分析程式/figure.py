@@ -22,6 +22,25 @@ def clearance_line(g, env, box, c):
     for e in gs:
         dashed(g, to_px(e.exterior.coords, box), c+(255,), width=2)
 
+def draw_mods(img, mods, fnt):
+    """hatch the structure area that must be removed (in-place on RGBA image)."""
+    if not mods: return img
+    W, H = img.size
+    for md in mods:
+        poly = md['poly_px']
+        if len(poly) < 3: continue
+        m = Image.new('L', (W, H), 0); ImageDraw.Draw(m).polygon(poly, fill=255)
+        h = Image.new('RGBA', (W, H), (255, 140, 0, 90)); dh = ImageDraw.Draw(h)
+        for k in range(-H, W, 10): dh.line([(k, 0), (k+H, H)], fill=(200, 0, 0, 255), width=2)
+        img.paste(h, (0, 0), m)
+        d = ImageDraw.Draw(img); d.line(poly+[poly[0]], fill=(200, 0, 0, 255), width=3)
+        cx, cy = md['centroid_px']; t = f"修正區 退縮{md['depth_m']:.2f}m"
+        tw = d.textlength(t, font=fnt(22))
+        d.rectangle((cx+18, cy-14, cx+26+tw, cy+16), fill=(255, 255, 220, 255), outline=(200, 0, 0, 255), width=2)
+        d.text((cx+22, cy-12), t, fill=(200, 0, 0, 255), font=fnt(22))
+        d.line([(cx, cy), (cx+18, cy)], fill=(200, 0, 0, 255), width=2)
+    return img
+
 COL = [(220,30,30),(20,90,230),(0,150,60),(200,0,200),(230,120,0),(0,160,170)]
 
 def seeds_from(moves, box):
@@ -72,7 +91,7 @@ def draw(pno, box, results, title, out, page_png, extra_seed=(), mask=None):
     rows = []
     for k, r in enumerate(results):
         t = f"{k+1}. {r['tag']}"
-        t += f"　最小淨距 {r['clr']:.2f} m" if r.get('turn', True) else f"　{r.get('note','')}"
+        t += (f"　最小淨距 {r['clr']:.2f} m") if r.get('turn', True) else f"　{r.get('note','')}"
         rows.append(t)
     tw = max(g.textlength(t, font=fnt(26)) for t in rows)
     y0 = 72
@@ -139,6 +158,6 @@ def draw_layers(pno, box, results, out_prefix, page_png, mask=None):
         mp = f'{out_prefix}_mv{k+1}.png'; ov.crop((x0, y0, x1, y1)).save(mp, optimize=True)
         out['moves'].append((mp, x0, y0, x1-x0, y1-y0, c))
         t = f"{k+1}. {r['tag']}"
-        t += f"　最小淨距 {r['clr']:.2f} m" if r.get('turn', True) else f"　{r.get('note','')}"
+        t += (f"　最小淨距 {r['clr']:.2f} m") if r.get('turn', True) else f"　{r.get('note','')}"
         out['rows'].append((t, c))
     return out

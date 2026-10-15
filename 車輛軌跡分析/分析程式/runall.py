@@ -100,13 +100,11 @@ def run_one(i):
     for grp in ('right','left'):
         out[grp]=[]
         for tag,en,ex,Rs in c[grp]:
-            r=turn_rule(ctx,en[0],ex[0],Rs); r['borrow']=False
-            if r is None or r['clr']<0.25:
-                r2=turn_rule(ctx,en[0],ex[-1],Rs)
-                if r2 is not None and (r is None or r2['clr']>=0.25 or r2['clr']>r['clr']):
-                    r2['borrow']=True; r2['strict_clr']=None if r is None else r['clr']; r=r2
+            r=turn_rule(ctx,en[0],ex[0],Rs); r['borrow']=False; r['mods']=[]
+            if r['clr']<0.25:
+                r['mods']=modification(ctx,r['env']); r['clr_before']=r['clr']; r['clr']=0.25
             r['tag']=tag; out[grp].append(r)
-            print(i,grp,tag,'clr=%.2f steer=%.1f R=%s swing=%.1f off=%.2f/%.2f'%(r['clr'],r['steer'],r['R'],r['swing'],r['entry_off'],r['exit_off']),flush=True)
+            print(i,grp,tag,'clr=%.2f before=%s steer=%.1f R=%s swing=%.1f mods=%s'%(r['clr'],r.get('clr_before'),r['steer'],r['R'],r['swing'],[(round(m['depth_m'],2),round(m['area_m2'],2)) for m in r['mods']]),flush=True)
     if c['thru']:
         out['thru']=[]
         for tag,pts in c['thru']:
@@ -122,7 +120,7 @@ def run_one(i):
     json.dump(lay,open(SCR+f'/layers_out/I{i}.json','w'),ensure_ascii=False)
     for grp in out:
         draw(c['pno'],box,out[grp],f"路口{i} {c['name']}　{VEH['name']}{GRPN[grp]}軌跡",SCR+f'/fig/I{i}_{grp}.jpg',SCR+'/'+c['png'],mask=c.get('mask'))
-    res={g:[{k:(float(v) if isinstance(v,(np.floating,float)) else v) for k,v in r.items() if k in('tag','clr','steer','R','entry','exit','off','L','req','swing','entry_off','exit_off','borrow','strict_clr')} for r in out[g]] for g in out}
+    res={g:[{k:(float(v) if isinstance(v,(np.floating,float)) else v) for k,v in r.items() if k in('tag','clr','steer','R','entry','exit','off','L','req','swing','entry_off','exit_off','borrow','strict_clr','mods','clr_before')} for r in out[g]] for g in out}
     json.dump(res,open(SCR+f'/fig/I{i}.json','w'),ensure_ascii=False,indent=1)
 if __name__=='__main__':
     from multiprocessing import Pool
