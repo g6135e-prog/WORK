@@ -1,7 +1,7 @@
 import sys, json, math, os; sys.path.insert(0, __file__.rsplit('/',1)[0])
 from search import *
 E,W,N,Sd=(1,0),(-1,0),(0,-1),(0,1)
-RR=np.arange(8,31,1.0); RL=np.arange(10,36,1.0)
+RR=np.arange(10,36,1.0); RL=np.arange(11,41,1.0)
 def ys(x0,d,vals): return [((x0,v),d) for v in vals]
 def xs(y0,d,vals): return [((v,y0),d) for v in vals]
 SK=0.155; NB=(SK/math.hypot(SK,1),-1/math.hypot(SK,1)); SB=(-NB[0],-NB[1])
@@ -75,7 +75,7 @@ CFG[5]=dict(name='崁頂二路/新市五路三段路口', sheet='平面配置圖
  thru=[('新市五路三段直行(往圖面下方)', [(432,400),(432,650),(440,1550),(440,1750)]),
        ('新市五路三段直行(往圖面上方)', [(856,1750),(856,1550),(847,650),(847,400)])])
 
-V_DESIGN=40.0
+V_DESIGN=50.0
 def thru_note(pts):
     p0,p1,p2,p3=[np.array(p,float) for p in pts]
     d=(p1-p0)/np.linalg.norm(p1-p0); n=np.array([-d[1],d[0]])
@@ -116,7 +116,7 @@ def run_one(i):
         lay[grp]=draw_layers(c['pno'],box,out[grp],SCR+f'/layers_out/I{i}_{grp}',SCR+'/'+c['png'],mask=c.get('mask'))
     json.dump(lay,open(SCR+f'/layers_out/I{i}.json','w'),ensure_ascii=False)
     for grp in out:
-        draw(c['pno'],box,out[grp],f"路口{i} {c['name']}　消防車{GRPN[grp]}軌跡",SCR+f'/fig/I{i}_{grp}.jpg',SCR+'/'+c['png'],mask=c.get('mask'))
+        draw(c['pno'],box,out[grp],f"路口{i} {c['name']}　{VEH['name']}{GRPN[grp]}軌跡",SCR+f'/fig/I{i}_{grp}.jpg',SCR+'/'+c['png'],mask=c.get('mask'))
     res={g:[{k:(float(v) if isinstance(v,(np.floating,float)) else v) for k,v in r.items() if k in('tag','clr','steer','R','entry','exit','off','L','req')} for r in out[g]] for g in out}
     json.dump(res,open(SCR+f'/fig/I{i}.json','w'),ensure_ascii=False,indent=1)
 if __name__=='__main__':

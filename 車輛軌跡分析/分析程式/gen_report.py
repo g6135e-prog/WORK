@@ -31,9 +31,9 @@ head, body = x.split('<office:body>')
 extra_styles = '''<style:style style:name="PB94" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:break-before="page" fo:widows="2" fo:orphans="2" fo:line-height="0.2916in"/></style:style>
 <style:style style:name="PB96" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:break-before="page" fo:widows="2" fo:orphans="2" fo:line-height="0.2916in"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-weight="bold" style:font-weight-asian="bold" style:font-weight-complex="bold" fo:font-size="13.5pt" style:font-size-asian="13.5pt" style:font-size-complex="13.5pt"/></style:style>
 <style:style style:name="PCap" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:text-align="center" fo:margin-bottom="0.12in" fo:keep-with-next="never"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-size="11pt" style:font-size-asian="11pt"/></style:style>
-<style:style style:name="frBase" style:family="graphic"><style:graphic-properties style:wrap="none" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0.04in" fo:margin-left="0in" fo:margin-right="0in" style:run-through="background" fo:border="none"/></style:style>
-<style:style style:name="frOvl" style:family="graphic"><style:graphic-properties style:wrap="run-through" style:run-through="foreground" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0in" fo:margin-left="0in" fo:margin-right="0in" fo:border="none"/></style:style>
-<style:style style:name="frTxt" style:family="graphic"><style:graphic-properties style:wrap="run-through" style:run-through="foreground" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0in" fo:margin-left="0in" fo:margin-right="0in" fo:background-color="#ffffff" draw:fill="solid" draw:fill-color="#ffffff" fo:padding="0.03in" fo:border="0.01in solid #000000"/></style:style>
+<style:style style:name="frBase" style:family="graphic"><style:graphic-properties style:wrap="none" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0.04in" fo:margin-left="0in" fo:margin-right="0in" style:run-through="background" fo:border="none" draw:fill="none" fo:background-color="transparent" style:background-transparency="100%" draw:stroke="none"/></style:style>
+<style:style style:name="frOvl" style:family="graphic"><style:graphic-properties style:wrap="run-through" style:run-through="foreground" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0in" fo:margin-left="0in" fo:margin-right="0in" fo:border="none" draw:fill="none" fo:background-color="transparent" style:background-transparency="100%" draw:stroke="none"/></style:style>
+<style:style style:name="frTxt" style:family="graphic"><style:graphic-properties style:wrap="run-through" style:run-through="foreground" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" fo:margin-top="0in" fo:margin-bottom="0in" fo:margin-left="0in" fo:margin-right="0in" fo:background-color="#ffffff" draw:fill="solid" draw:fill-color="#ffffff" fo:padding="0.03in" fo:border="0.01in solid #000000" draw:stroke="solid" svg:stroke-color="#000000" svg:stroke-width="0.01in"/></style:style>
 <style:style style:name="PLeg" style:family="paragraph"><style:paragraph-properties fo:margin-top="0in" fo:margin-bottom="0in" fo:line-height="115%"/><style:text-properties style:font-name="標楷體" style:font-name-asian="標楷體" style:font-name-complex="新細明體" fo:font-size="7.5pt" style:font-size-asian="7.5pt" style:font-size-complex="7.5pt"/></style:style>
 <style:style style:name="PFig" style:parent-style-name="內文" style:family="paragraph"><style:paragraph-properties fo:text-align="start" fo:keep-with-next="always" fo:margin-top="0.05in"/></style:style>
 <style:style style:name="TC0" style:family="text"><style:text-properties fo:color="#dc1e1e"/></style:style>
@@ -77,7 +77,7 @@ method = [
 ]
 mp = ''.join(f'<text:p text:style-name="P74"><text:span text:style-name="T76">{esc(t)}</text:span></text:p>' for t in method)
 desc = [
-    f'1. 設計車種：消防車（水箱車），全長{VEH["L"]:.2f} m、車寬{VEH["W"]:.2f} m、軸距{VEH["WB"]:.2f} m、前懸{VEH["FOH"]:.2f} m、後懸{VEH["ROH"]:.2f} m、輪距{VEH["TRACK"]:.2f} m、最大轉向角{VEH["STEER"]:.0f}°。',
+    f'1. 設計車種：{VEH["name"]}（依設計規範圖1.3「大客車最小轉向軌跡參考圖」），全長{VEH["L"]:.2f} m、車寬{VEH["W"]:.2f} m、軸距{VEH["WB"]:.2f} m、前懸{VEH["FOH"]:.2f} m、後懸{VEH["ROH"]:.2f} m、左前輪最小轉向半徑{VEH["RMIN"]:.2f} m（換算最大轉向角約{VEH["STEER"]:.1f}°）；輪距圖未標示，採{VEH["TRACK"]:.2f} m。',
     '2. 分析方法：以前軸中心沿導引路徑行駛、後軸依曳引曲線（tractrix）追隨之車輛運動模型，逐點計算車身四角及四輪軌跡，取其包絡範圍為車身掃掠範圍。比例尺依設計圖里程樁號（每20 m）校正。',
     '3. 結構物判定：緣石、轉角綠帶、島頭及中央分隔島等取自設計圖CAD圖層（01-7、中央分隔島等），標線（車道線、停止線、斑馬線、箭頭）不列為結構物；圖層未繪製之既有緣石及中央分隔島依圖面補繪。',
     '4. 轉向路徑：於同向車道範圍內，以轉彎半徑8~35 m（且轉向角不超過最大轉向角、轉彎圓弧須於路口範圍內完成）搜尋前軸導引路徑，取與結構物淨距最大、且最少跨用車道之路徑。',
@@ -124,8 +124,8 @@ def fig_xml(i, grp, k, cap):
     lw = 3.3 if grp != 'thru' else 3.9
     x += (f'<draw:frame draw:style-name="frTxt" draw:name="圖{i}-{k} 圖例" text:anchor-type="paragraph" svg:x="0.05in" svg:y="0.05in" svg:width="{lw}in" draw:z-index="{z+8}">'
           f'<draw:text-box fo:min-height="0.2in">{rows}</draw:text-box></draw:frame>')
-    spec = ['設計車種：消防車(水箱車)', f'全長{VEH["L"]:.2f}m　車寬{VEH["W"]:.2f}m', f'軸距{VEH["WB"]:.2f}m　輪距{VEH["TRACK"]:.2f}m',
-            f'前懸{VEH["FOH"]:.2f}m　後懸{VEH["ROH"]:.2f}m', f'最大轉向角{VEH["STEER"]:.0f}°', '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
+    spec = [f'設計車種：{VEH["name"]}', f'全長{VEH["L"]:.2f}m　車寬{VEH["W"]:.2f}m', f'軸距{VEH["WB"]:.2f}m　輪距{VEH["TRACK"]:.2f}m',
+            f'前懸{VEH["FOH"]:.2f}m　後懸{VEH["ROH"]:.2f}m', f'最小轉向半徑{VEH["RMIN"]:.2f}m', '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
     sw, sh = 1.75, 0.11*len(spec)+0.08
     x += (f'<draw:frame draw:style-name="frTxt" draw:name="圖{i}-{k} 車種規格" text:anchor-type="paragraph" svg:x="{Win-sw-0.05:.4f}in" svg:y="{Hin-sh-0.05:.4f}in" svg:width="{sw}in" draw:z-index="{z+9}">'
           f'<draw:text-box fo:min-height="{sh:.3f}in">' + ''.join(f'<text:p text:style-name="PLeg">{esc(t)}</text:p>' for t in spec) + '</draw:text-box></draw:frame>')
@@ -161,7 +161,7 @@ for i, c in CFG.items():
     t = table_tpl
     # fill vehicle cells
     for p in ('P116', 'P125', 'P134'):
-        t = t.replace(f'<text:p text:style-name="{p}"/>', f'<text:p text:style-name="{p}">消防車<text:line-break/>(水箱車)</text:p>')
+        t = t.replace(f'<text:p text:style-name="{p}"/>', f'<text:p text:style-name="{p}">{VEH["name"]}</text:p>')
     t = t.replace('直行路段路口上下游偏移，其漸變是否符合規範<text:s/><text:s text:c="4"/>', cells['thru'][0])
     parts = t.split('結構物是否與轉向軌跡保持25公分以上之間距')
     t = parts[0] + cells['left'][0] + parts[1] + cells['right'][0] + parts[2]
@@ -171,28 +171,37 @@ for i, c in CFG.items():
     blk = f'<text:h text:style-name="{hstyle}" text:outline-level="3">({CN[i-1]})路口{i}({esc(c["name"])})</text:h>'
     blk += f'<text:p text:style-name="PNote">位置：{esc(STA[i])}；套繪圖說：{esc(c["sheet"])}。{esc(NOTE[i])}</text:p>'
     blk += '<text:h text:style-name="P97" text:outline-level="3">1.分析項目</text:h>' + t
-    blk += '<text:p text:style-name="PNote">註：標示「＊」者表示消防車轉向時須跨用相鄰同向車道（含跨越車道線行駛）始能維持25公分以上間距。</text:p>'
+    blk += '<text:p text:style-name="PNote">註：標示「＊」者表示'+VEH['name']+'轉向時須跨用相鄰同向車道（含跨越車道線行駛）始能維持25公分以上間距。</text:p>'
     blk += hline_tpl.replace('draw:id="id1"', f'draw:id="idL{i}"').replace('Horizontal Line 2', f'Horizontal Line {i+10}')
     blk += '<text:p text:style-name="P142">2.軌跡模擬圖(轉向及直行軌跡)</text:p>'
     k = 0
     for grp in ('right', 'left', 'thru'):
         if grp == 'thru' and c['thru'] is None: continue
         k += 1
-        blk += fig_xml(i, grp, k, f'圖{i}-{k}　路口{i} {c["name"]}　消防車{GRPN[grp]}軌跡模擬圖')
+        blk += fig_xml(i, grp, k, f'圖{i}-{k}　路口{i} {c["name"]}　{VEH["name"]}{GRPN[grp]}軌跡模擬圖')
     blocks += blk
 
 # conclusion
 concl = '<text:h text:style-name="PB94" text:outline-level="3"><text:span text:style-name="T95">【四、綜合說明】</text:span></text:h>'
 lines = []
-okturn = [s for s in summary if s[1] in ('left', 'right')]
-mn = min(s[3] for s in okturn)
-lines.append(f'1. 五處路口之左轉、右轉軌跡經模擬，消防車（水箱車）車身掃掠範圍與緣石、轉角綠帶、島頭等結構物之最小淨距為{mn:.2f} m，均保持25公分以上。')
-lines.append('2. 部分路口（標示「＊」者）消防車轉向時須跨用相鄰同向車道，屬大型緊急車輛轉向之常態；建議交通號誌時制及停止線位置維持現行配置，以利消防車轉向。')
-bad = [(i, CFG[i]['name']) for i, g, ok, _ in summary if g == 'thru' and not ok]
-if bad:
-    R4 = json.load(open(f'{SCR}/fig/I4.json', encoding='utf-8'))['thru'][0]
-    lines.append(f'3. 直行軌跡：路口2、路口5及路口4之新市二路三段直行，上下游車道偏移漸變均符合規範。路口4崁頂二路往西側既有道路直行，上下游中心偏移約{R4["off"]:.2f} m，路口內可用漸變長度約{R4["L"]:.1f} m，小於V＝{V_DESIGN:.0f} km/h所需之{R4["req"]:.1f} m；'
-                 '建議於路口內補繪導引標線（設計圖已有導引虛線者予以確認），或於西側道路前設置速限／警告標誌，並請依實際速限檢討。')
+turns = [t for t in summary if t[1] in ('left', 'right')]
+bad_turn = [t for t in turns if not t[2]]
+mn = min(t[3] for t in turns)
+VNm = VEH['name']
+if not bad_turn:
+    lines.append(f'1. 五處路口之左轉、右轉軌跡經模擬，{VNm}車身掃掠範圍與緣石、轉角綠帶、島頭等結構物之最小淨距為{mn:.2f} m，均保持25公分以上。')
+else:
+    lst = '、'.join(f'路口{i}{GRPN[g]}' for i, g, ok, v in bad_turn)
+    lines.append(f'1. 轉向軌跡：{lst}之{VNm}掃掠範圍與結構物間距未達25公分（詳各路口分析表及軌跡圖之最小淨距標示），建議檢討該處轉角緣石半徑、轉角綠帶或島頭退縮；其餘路口轉向軌跡均保持25公分以上。')
+lines.append(f'2. 標示「＊」者表示{VNm}轉向時須跨用相鄰同向車道（含跨越車道線行駛），建議停止線位置及轉向車道配置維持現行設計，以利大型車轉向。')
+thru_bad = []
+for i, c in CFG.items():
+    if c['thru'] is None: continue
+    for r in json.load(open(f'{SCR}/fig/I{i}.json', encoding='utf-8'))['thru']:
+        if r['L'] < r['req']: thru_bad.append((i, r))
+if thru_bad:
+    txt = '；'.join(f'路口{i}{r["tag"]}，上下游偏移{r["off"]:.2f} m，路口內可用漸變長度{r["L"]:.1f} m，小於V＝{V_DESIGN:.0f} km/h所需之{r["req"]:.1f} m' for i, r in thru_bad)
+    lines.append(f'3. 直行軌跡：{txt}；建議於路口內補繪導引標線（設計圖已有導引虛線者予以確認）或調整上下游車道對位，其餘直行車道偏移漸變均符合規範。')
 else:
     lines.append('3. 直行軌跡：各路口上下游車道偏移漸變均符合規範。')
 lines.append('4. 路口1、路口3為T字路口，直行軌跡檢核列為不適用。')

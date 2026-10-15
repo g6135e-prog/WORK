@@ -4,8 +4,12 @@ from shapely.ops import unary_union
 
 K = 24.48  # px per m at 200 dpi (measured from station spacing)
 
-# 消防車 (水箱消防車) design vehicle, meters
-VEH = dict(L=9.40, W=2.50, WB=5.00, FOH=1.40, ROH=3.00, TRACK=2.10, STEER=40.0)
+# 大客車 (BUS) design vehicle, meters — 設計規範圖1.3 大客車最小轉向軌跡參考圖
+# L=12.20, 前懸2.10, 軸距7.60, 後懸2.50, 寬2.50; 左前輪最小轉向半徑13.00 m
+# -> rear-axle-centre radius 9.50 m -> max steer = atan(7.60/9.50) = 38.7 deg
+import math as _m
+VEH = dict(name='大客車', L=12.20, W=2.50, WB=7.60, FOH=2.10, ROH=2.50, TRACK=2.10,
+           STEER=round(_m.degrees(_m.atan(7.60/9.50)), 1), RMIN=13.00)
 
 def fillet_path(pts, radii, step=0.05):
     """pts in px; radii (m) for each interior vertex. Returns Nx2 array in metres."""

@@ -61,9 +61,9 @@ def draw(pno, box, results, title, out, page_png, extra_seed=(), mask=None):
         g.text((46, y0+8+36*k), t, fill='black', font=fnt(26))
     # spec box
     W, H = base.size
-    spec = ['設計車種：消防車(水箱車)', f"全長 {VEH['L']:.2f}m　車寬 {VEH['W']:.2f}m",
+    spec = [f"設計車種：{VEH['name']}", f"全長 {VEH['L']:.2f}m　車寬 {VEH['W']:.2f}m",
             f"軸距 {VEH['WB']:.2f}m　輪距 {VEH['TRACK']:.2f}m", f"前懸 {VEH['FOH']:.2f}m　後懸 {VEH['ROH']:.2f}m",
-            f"最大轉向角 {VEH['STEER']:.0f}°", '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
+            f"最小轉向半徑 {VEH['RMIN']:.2f}m", '色帶：車身掃掠範圍　細線：輪跡', '黑框：車輛位置　○：最小淨距處']
     bw = 400; bh = 34*len(spec)+20
     g.rectangle((W-bw-12, H-bh-12, W-12, H-12), fill='white', outline='black', width=3)
     for i, t in enumerate(spec):
